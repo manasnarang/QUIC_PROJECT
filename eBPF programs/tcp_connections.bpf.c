@@ -47,11 +47,11 @@ int info_connection(struct __sk_buff *skb) {
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct tcphdr) > data_end) {
         return TC_ACT_SHOT; // Drop the packet if out of bounds
     }
-    struct data_t data1 = {};
-    data1.source_ip_addr=ip->saddr;
-    data1.dest_ip_addr=ip->daddr;
-    data1.source_port=tcp_st1->source;
-    data1.dest_port=tcp_st1->dest;
+    struct data_t * data1;
+    data1->source_ip_addr=ip->saddr;
+    data1->dest_ip_addr=ip->daddr;
+    data1->source_port=tcp_st1->source;
+    data1->dest_port=tcp_st1->dest;
     int * count=bpf_map_lookup_elem(&tcp_connection_map, &data1);
     int number=0;
     if(count!=0){
