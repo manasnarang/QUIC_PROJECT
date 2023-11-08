@@ -74,8 +74,8 @@ int info_connection(struct __sk_buff *skb) {
 b = BPF(text=prog)
 
 # Attach the BPF program to trace TCP connect events
-b.attach_kprobe(event="tcp_ack", fn_name="info_connection")
-b.attach_kprobe(event="tcp_ack", fn_name="info_connection")
+b.attach_kprobe(event="tcp_v4_connect", fn_name="info_connection")
+b.attach_kprobe(event="tcp_v6_connect", fn_name="info_connection")
 
 # # Dictionary to store connection counts per PID
 # connection_count = {}
