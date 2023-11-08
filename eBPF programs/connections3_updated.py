@@ -31,10 +31,9 @@ struct data_t {
 //   unsigned int max_entries;
 // };
 
-BPF_HASH(tcp_connection_map, int, struct data_t);
+BPF_HASH(tcp_connection_map,struct data_t,int);
 
 int info_connection(struct __sk_buff *skb) {
-    static int count = 0;
     void *data = (void *)(long)(skb->data);
     void * data_end = (void *)(long)(skb->data_end);
     if (data > data_end) {
@@ -55,13 +54,18 @@ int info_connection(struct __sk_buff *skb) {
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct tcphdr) > data_end) {
         return 0; // Drop the packet if out of bounds
     }
-    struct data_t data1 = {};
-    data1.source_ip_addr=ip->saddr;
-    data1.dest_ip_addr=ip->daddr;
-    data1.source_port=tcp_st1->source;
-    data1.dest_port=tcp_st1->dest;
-    count=count+1;
-    tcp_connection_map.update(&count, &data1);
+    struct data_t * data1;
+    data1->source_ip_addr=ip->saddr;
+    data1->dest_ip_addr=ip->daddr;
+    data1->source_port=tcp_st1->source;
+    data1->dest_port=tcp_st1->dest;
+    int count=tcp_connection_map.lookup(&data1);
+    int number=0;
+    if(count!=0){
+        number=*count;
+    }
+    number=number+1
+    tcp_connection_map.update(&data1,&number);
     return 0;
 }
 """
