@@ -85,13 +85,15 @@ try:
     while True:
         sleep(3)
         s=""
-        for (k, v) in b["info_connection"].items():
+        for (k, v) in b["tcp_connection_map"].items():
             connection_info[k.value] = c_int(v.value).value
-        for data, count in connection_count.items():
+        for data, count in connection_info.items():
             print(data.source_ip_addr)
             print(data.dest_ip_addr)
             print(data.source_port)
             print(data.dest_port)
+            print(count)
+            print()
             
 except KeyboardInterrupt:
     pass
