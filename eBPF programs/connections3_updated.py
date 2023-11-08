@@ -59,13 +59,13 @@ int info_connection(struct __sk_buff *skb) {
     data1->dest_ip_addr=ip->daddr;
     data1->source_port=tcp_st1->source;
     data1->dest_port=tcp_st1->dest;
-    int count=tcp_connection_map.lookup(&data1);
+    int * count=tcp_connection_map.lookup(data1);
     int number=0;
     if(count!=0){
         number=*count;
     }
-    number=number+1
-    tcp_connection_map.update(&data1,&number);
+    number=number+1;
+    tcp_connection_map.update(data1,&number);
     return 0;
 }
 """
@@ -78,15 +78,20 @@ b.attach_kprobe(event="tcp_v4_connect", fn_name="info_connection")
 b.attach_kprobe(event="tcp_v6_connect", fn_name="info_connection")
 
 # # Dictionary to store connection counts per PID
-# connection_count = {}
+connection_info = {}
 
 # # Read and display connection counts
-# try:
-#     while True:
-#         sleep(3)
-#         for (k, v) in b["conn_count"].items():
-#             connection_count[k.value] = c_int(v.value).value
-#         for pid, count in connection_count.items():
-#             print("PID {}: {} TCP connections".format(pid, count))
-# except KeyboardInterrupt:
-#     pass
+try:
+    while True:
+        sleep(3)
+        s=""
+        for (k, v) in b["info_connection"].items():
+            connection_info[k.value] = c_int(v.value).value
+        for data, count in connection_count.items():
+            print(data.source_ip_addr)
+            print(data.dest_ip_addr)
+            print(data.source_port)
+            print(data.dest_port)
+            
+except KeyboardInterrupt:
+    pass
