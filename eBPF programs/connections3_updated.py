@@ -36,14 +36,26 @@ BPF_HASH(tcp_connection_map,struct data_t,int);
 int info_connection(struct __sk_buff *skb) {
     void *data = (void *)(long)(skb->data);
     void * data_end = (void *)(long)(skb->data_end);
+    if(data==NULL){
+        return 0;
+    }
+    if(data_end==NULL){
+        return 0;
+    }
     if (data > data_end) {
         return 0;  // Drop the packet if out of bounds
     }
     struct ethhdr *eth = data;
+    if(eth==NULL){
+        return 0;
+    }
     if (data + sizeof(struct ethhdr) > data_end) {
         return 0;  // Drop the packet if out of bounds
     }
     struct iphdr *ip = data + sizeof(struct ethhdr); // Pointer to the IP header
+    if(ip==NULL){
+        return 0;
+    }
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end) {
         return 0; // Drop the packet if out of bounds
     }
@@ -51,6 +63,9 @@ int info_connection(struct __sk_buff *skb) {
         return 0;
     }
     struct tcphdr * tcp_st1 = data + sizeof(struct ethhdr)+(ip->ihl << 2);
+    if(tcp_st1==NULL){
+        return 0;
+    }
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct tcphdr) > data_end) {
         return 0; // Drop the packet if out of bounds
     }
