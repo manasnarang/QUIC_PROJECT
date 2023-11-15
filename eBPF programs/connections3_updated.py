@@ -7,7 +7,6 @@ from time import sleep
 prog = """
 #include <uapi/linux/ptrace.h>
 #include <libbpf/include/uapi/linux/bpf.h>
-#include <linux/bpf.h>
 #include <linux/if_ether.h>
 #include <linux/ip.h>
 #include <linux/pkt_cls.h>
@@ -15,7 +14,7 @@ prog = """
 #include <linux/tcp.h>
 #include <linux/in.h>
 #include <linux/in6.h>
-#include <linux/filter.h>
+//#include <linux/filter.h>
 #include <linux/socket.h>
 
 struct data_t { 
