@@ -69,11 +69,11 @@ int info_connection(struct __sk_buff *skb) {
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct tcphdr) > data_end) {
         return 0; // Drop the packet if out of bounds
     }
-    struct data_t * data1;
-    data1->source_ip_addr=ip->saddr;
-    data1->dest_ip_addr=ip->daddr;
-    data1->source_port=tcp_st1->source;
-    data1->dest_port=tcp_st1->dest;
+    struct data_t data1={};
+    data1.source_ip_addr=ip->saddr;
+    data1.dest_ip_addr=ip->daddr;
+    data1.source_port=tcp_st1->source;
+    data1.dest_port=tcp_st1->dest;
     int * count=tcp_connection_map.lookup(data1);
     int number=0;
     if(count!=0){
