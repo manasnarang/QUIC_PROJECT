@@ -6,6 +6,7 @@ from time import sleep
 # BPF program
 prog = """
 #include <uapi/linux/ptrace.h>
+#include <libbpf/include/uapi/linux/bpf.h>
 #include <linux/bpf.h>
 #include <linux/if_ether.h>
 #include <linux/ip.h>
@@ -74,13 +75,13 @@ int info_connection(struct __sk_buff *skb) {
     data1.dest_ip_addr=ip->daddr;
     data1.source_port=tcp_st1->source;
     data1.dest_port=tcp_st1->dest;
-    int * count=tcp_connection_map.lookup(data1);
+    int * count=tcp_connection_map.lookup(&data1);
     int number=0;
     if(count!=0){
         number=*count;
     }
     number=number+1;
-    tcp_connection_map.update(data1,&number);
+    tcp_connection_map.update(&data1,&number);
     return 0;
 }
 """
