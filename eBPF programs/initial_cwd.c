@@ -50,12 +50,6 @@ int bpf_testcb(struct bpf_sock_ops *skops)
 		rv = bpf_sock_ops_cb_flags_set(skops, BPF_SOCK_OPS_OPTION_WRITE_FLAG);
 		char fmt0[] = "tcp connect callback\n";
 		bpf_trace_printk(fmt0, sizeof(fmt0));
-		/* Set sndbuf and rcvbuf of active connections
-		rv += bpf_setsockopt(skops, SOL_SOCKET, SO_SNDBUF, &bufsize,
-				    sizeof(bufsize));
-		rv += bpf_setsockopt(skops, SOL_SOCKET, SO_RCVBUF,
-				     &bufsize, sizeof(bufsize));
-		 */
 		break;
 	case BPF_SOCK_OPS_RWND_INIT:
 		// enable proper sending of new unsent data during fast recovery
@@ -83,15 +77,8 @@ int bpf_testcb(struct bpf_sock_ops *skops)
 		if (skops->data_segs_in > 1)
 			bpf_sock_ops_cb_flags_set(skops, 0);
 		break;
-
 	/* server side */
 	case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB:
-		/* Set sndbuf and rcvbuf of passive connections
-		rv = bpf_setsockopt(skops, SOL_SOCKET, SO_SNDBUF, &bufsize,
-				    sizeof(bufsize));
-		rv +=  bpf_setsockopt(skops, SOL_SOCKET, SO_RCVBUF,
-				      &bufsize, sizeof(bufsize));
-		 */
 		break;
 	case BPF_TCP_PARSE_OPTIONS:
 		if (DEBUG) {
