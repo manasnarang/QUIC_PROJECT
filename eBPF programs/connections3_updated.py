@@ -59,9 +59,9 @@ int info_connection(struct __sk_buff *skb) {
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end) {
         return 0; // Drop the packet if out of bounds
     }
-    if (ip->protocol == IPPROTO_TCP) {
-        return 0;
-    }
+    //if (ip->protocol == IPPROTO_TCP) {
+    //    return 0;
+    //}
     struct tcphdr * tcp_st1 = data + sizeof(struct ethhdr)+(ip->ihl << 2);
     if(tcp_st1==NULL){
         return 0;
