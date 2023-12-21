@@ -16,71 +16,36 @@ prog = """
 #include <linux/in6.h>
 //#include <linux/filter.h>
 #include <linux/socket.h>
+//BPF_HASH(conn_count, u64, char[40]);
 
-struct data_t { 
-    __be32 source_ip_addr;
-    __be32 dest_ip_addr;
-    __be16 source_port;
-    __be16 dest_port;
-};
-
-// struct BPF_MAP_DEF {
-//   unsigned int type;
-//   unsigned int key_size;
-//   unsigned int value_size;
-//   unsigned int max_entries;
-// };
-
-BPF_HASH(tcp_connection_map,struct data_t,int);
-
-int info_connection(struct __sk_buff *skb) {
+int count_connection(struct __sk_buff *skb) {
     void *data = (void *)(long)(skb->data);
+    bpf_trace_printk("Check 1");
     void * data_end = (void *)(long)(skb->data_end);
+    bpf_trace_printk("Check 2");
     if(data==NULL){
+        bpf_trace_printk("Data=null");
         return 0;
     }
     if(data_end==NULL){
+        bpf_trace_printk("Data end =null");
         return 0;
     }
     if (data > data_end) {
+        bpf_trace_printk("Data out of bounds");
         return 0;  // Drop the packet if out of bounds
     }
-    struct ethhdr *eth = data;
-    if(eth==NULL){
-        return 0;
-    }
-    if (data + sizeof(struct ethhdr) > data_end) {
-        return 0;  // Drop the packet if out of bounds
-    }
-    struct iphdr *ip = data + sizeof(struct ethhdr); // Pointer to the IP header
-    if(ip==NULL){
-        return 0;
-    }
-    if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end) {
-        return 0; // Drop the packet if out of bounds
-    }
-    //if (ip->protocol == IPPROTO_TCP) {
-    //    return 0;
+    bpf_trace_printk("Check 3");
+    u64 pid = bpf_get_current_pid_tgid();
+    //int *count = conn_count.lookup(&pid);
+    //if (!count) {
+        //int initial_count = 1;
+        //conn_count.update(&pid, &initial_count);
+    //} else {
+        //(*count)++;
     //}
-    struct tcphdr * tcp_st1 = data + sizeof(struct ethhdr)+(ip->ihl << 2);
-    if(tcp_st1==NULL){
-        return 0;
-    }
-    if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct tcphdr) > data_end) {
-        return 0; // Drop the packet if out of bounds
-    }
-    struct data_t data1={};
-    data1.source_ip_addr=ip->saddr;
-    data1.dest_ip_addr=ip->daddr;
-    data1.source_port=tcp_st1->source;
-    data1.dest_port=tcp_st1->dest;
-    int * count=tcp_connection_map.lookup(&data1);
-    int number=0;
-    if(count!=0){
-        number=*count;
-    }
-    number=number+1;
-    tcp_connection_map.update(&data1,&number);
+    bpf_trace_printk("Hello World");
+
     return 0;
 }
 """
@@ -89,26 +54,21 @@ int info_connection(struct __sk_buff *skb) {
 b = BPF(text=prog)
 
 # Attach the BPF program to trace TCP connect events
-b.attach_kprobe(event="tcp_v4_connect", fn_name="info_connection")
-b.attach_kprobe(event="tcp_v6_connect", fn_name="info_connection")
+b.attach_kprobe(event="tcp_recvmsg", fn_name="count_connection")
+#b.attach_kprobe(event="tcp_v4_connect", fn_name="count_connection")
 
 # # Dictionary to store connection counts per PID
-connection_info = {}
+# connection_count = {}
 
 # # Read and display connection counts
-try:
-    while True:
-        sleep(3)
-        s=""
-        for (k, v) in b["tcp_connection_map"].items():
-            connection_info[k.value] = c_int(v.value).value
-        for data, count in connection_info.items():
-            print(data.source_ip_addr)
-            print(data.dest_ip_addr)
-            print(data.source_port)
-            print(data.dest_port)
-            print(count)
-            print()
-            
-except KeyboardInterrupt:
-    pass
+# try:
+#     while True:
+#         sleep(3)
+#         for (k, v) in b["conn_count"].items():
+#             connection_count[k.value] = c_int(v.value).value
+#         for pid, count in connection_count.items():
+#             print("PID {}: {} TCP connections".format(pid, count))
+# except KeyboardInterrupt:
+#     pass
+
+b.trace_print()
