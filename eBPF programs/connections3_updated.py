@@ -16,36 +16,40 @@ prog = """
 #include <linux/in6.h>
 //#include <linux/filter.h>
 #include <linux/socket.h>
-//BPF_HASH(conn_count, u64, char[40]);
-
-int count_connection(struct __sk_buff *skb) {
-    void *data = (void *)(long)(skb->data);
-    bpf_trace_printk("Check 1");
-    void * data_end = (void *)(long)(skb->data_end);
-    bpf_trace_printk("Check 2");
-    if(data==NULL){
-        bpf_trace_printk("Data=null");
+struct data_t { 
+    long long int source_ip_addr;
+    long long int dest_ip_addr;
+    long long int source_port;
+    long long int dest_port;
+};
+BPF_HASH(tcp_connection_map,struct data_t,int);
+int count_connection(struct pt_regs *ctx) {
+struct sock *sk=(struct sock *)PT_REGS_PARM1(ctx);
+    if(sk==NULL){
+        bpf_trace_printk("Null socket");
         return 0;
     }
-    if(data_end==NULL){
-        bpf_trace_printk("Data end =null");
-        return 0;
+    struct data_t data1={};
+    if(sk->__sk_common.skc_family == AF_INET){
+        data1.source_ip_addr= sk->__sk_common.skc_rcv_saddr;
+        data1.dest_ip_addr= sk->__sk_common.skc_daddr;
+        data1.source_port= sk->__sk_common.skc_num;
+        data1.dest_port= sk->__sk_common.skc_dport;
+        //bpf_trace_printk("Source ip = %lld",data1.source_ip_addr);
+        //bpf_trace_printk("Source port = %lld",data1.source_port);
+        //bpf_trace_printk("Destination ip = %lld",data1.dest_ip_addr);
+        //bpf_trace_printk("Destination port = %lld",data1.dest_port);
+        //bpf_trace_printk("Success");
     }
-    if (data > data_end) {
-        bpf_trace_printk("Data out of bounds");
-        return 0;  // Drop the packet if out of bounds
-    }
-    bpf_trace_printk("Check 3");
-    u64 pid = bpf_get_current_pid_tgid();
-    //int *count = conn_count.lookup(&pid);
-    //if (!count) {
-        //int initial_count = 1;
-        //conn_count.update(&pid, &initial_count);
-    //} else {
-        //(*count)++;
-    //}
     bpf_trace_printk("Hello World");
-
+    int * count=tcp_connection_map.lookup(&data1);
+    int number=0;
+    if(count!=0){
+        number=*count;
+    }
+    number=number+1;
+    tcp_connection_map.update(&data1,&number);
+    bpf_trace_printk("Bye World");
     return 0;
 }
 """
@@ -57,18 +61,18 @@ b = BPF(text=prog)
 b.attach_kprobe(event="tcp_recvmsg", fn_name="count_connection")
 #b.attach_kprobe(event="tcp_v4_connect", fn_name="count_connection")
 
-# # Dictionary to store connection counts per PID
-# connection_count = {}
+
 
 # # Read and display connection counts
-# try:
-#     while True:
-#         sleep(3)
-#         for (k, v) in b["conn_count"].items():
-#             connection_count[k.value] = c_int(v.value).value
-#         for pid, count in connection_count.items():
-#             print("PID {}: {} TCP connections".format(pid, count))
-# except KeyboardInterrupt:
-#     pass
+try:
+    while True:
+        sleep(3)
+        for (k, v) in b["tcp_connection_map"].items():
+            #print(type(v),type(k))
+            print(f"Source IP={k.source_ip_addr} \t Source Port= {k.source_port} \t Destination IP={k.dest_ip_addr} \t Destination Port ={k.dest_port} \t\t Count={c_int(v.value).value}")
+            print()
+            
+except KeyboardInterrupt:
+    pass
 
-b.trace_print()
+#b.trace_print()
